@@ -7,6 +7,13 @@ import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.Consumer
 import com.rabbitmq.client.DefaultConsumer
 import com.rabbitmq.client.Envelope
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
+import org.eclipse.paho.client.mqttv3.MqttCallback
+import org.eclipse.paho.client.mqttv3.MqttClient
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions
+import org.eclipse.paho.client.mqttv3.MqttException
+import org.eclipse.paho.client.mqttv3.MqttMessage
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 
 
 class Receiver {
@@ -16,23 +23,69 @@ class Receiver {
             throws java.io.IOException,
                     java.lang.InterruptedException {
 
-        ConnectionFactory factory = new ConnectionFactory();
-        factory.setHost("localhost");
-        Connection connection = factory.newConnection();
-        Channel channel = connection.createChannel();
+        String topic        = "amp.topic";
+        String content      = "Message from MqttPublishSample";
+        int qos             = 0;  //setting to 0 fixed error
+        String broker       = "tcp://localhost:1883";
+        String clientId     = "JavaSample"+Math.random();
+        MemoryPersistence persistence = new MemoryPersistence();
+        MqttClient sampleClient
+        try {
+            sampleClient = new MqttClient(broker, clientId, persistence);
+            MqttConnectOptions connOpts = new MqttConnectOptions();
+            connOpts.setCleanSession(true);
+            System.out.println("Connecting to broker: "+broker);
+            sampleClient.connect(connOpts);
+            System.out.println("Connected");
+            System.out.println("Subscribing to "+topic);
 
-        channel.queueDeclare(QUEUE_NAME, false, false, false, null);
-        System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
+            sampleClient.subscribe(topic)
+            sampleClient.callback = new MyCallback()
 
-        Consumer consumer = new DefaultConsumer(channel) {
-            @Override
-            public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
-                    throws IOException {
-                String message = new String(body, "UTF-8");
-                System.out.println(" [x] Received '" + message + "'");
+            System.out.println("Subscribed")
+            while(true) {
+                sleep(1000);
             }
-        };
-        channel.basicConsume(QUEUE_NAME, true, consumer);
+//            MqttMessage message = new MqttMessage(content.getBytes());
+//            message.setQos(qos);
+//            sampleClient.publish(topic, message);
 
+        } catch(MqttException me) {
+            System.out.println("reason "+me.getReasonCode());
+            System.out.println("msg "+me.getMessage());
+            System.out.println("loc "+me.getLocalizedMessage());
+            System.out.println("cause "+me.getCause());
+            System.out.println("excep "+me);
+            me.printStackTrace();
+        }
+        finally {
+            if(sampleClient) {
+                sampleClient.disconnect();
+            }
+            System.out.println("Disconnected");
+        }
+        System.exit(0);
+    }
+
+    static class MyCallback implements MqttCallback {
+
+        @Override
+        void connectionLost(Throwable cause) {
+            cause.stackTrace
+        }
+
+        @Override
+        void messageArrived(String topic, MqttMessage message) throws Exception {
+
+            println "Recieved: $message"
+
+
+        }
+
+        @Override
+        void deliveryComplete(IMqttDeliveryToken token) {
+            println "delivery complete: $token.messageId -- $token.message"
+            token.messageId
+        }
     }
 }

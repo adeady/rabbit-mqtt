@@ -13,7 +13,7 @@ public class Sender {
     public static void main(String[] argv) throws java.io.IOException {
         String topic        = "amp.topic";
         String content      = "Message from MqttPublishSample";
-        int qos             = 2;  //setting to 0 fixed error
+        int qos             = 0;  //setting to 0 fixed error
         String broker       = "tcp://localhost:1883";
         String clientId     = "JavaSample"+Math.random();
         MemoryPersistence persistence = new MemoryPersistence();
